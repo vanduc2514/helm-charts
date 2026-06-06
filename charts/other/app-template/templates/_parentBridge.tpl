@@ -8,23 +8,24 @@ the parent chart's full context (which includes its .Files) and rendering
 configMaps/secrets using that context.
 
 Usage in parent chart template:
-  {{ include "app-template.configmaps-from-folder" (dict "rootContext" . "files" $.Files) }}
+  {{ include "app-template.configmaps-from-folder" (dict "files" $.Files) }}
 
-This reads configMapsFromFolder values from the parent chart's top-level
-values and uses the parent chart's .Files to read the folder contents.
-Values should be at top level (NOT inside app-template: section):
+This uses app-template's own root context for template/dict operations
+but overrides .Files with the parent chart's .Files to read config/ folder
+contents. Values MUST be in the app-template: section of the parent chart:
 
-  configMapsFromFolder:
-    enabled: true
-    basePath: config/my-app
+  app-template:
+    configMapsFromFolder:
+      enabled: true
+      basePath: config/my-app
 */}}
 {{- define "app-template.configmaps-from-folder" -}}
-{{- include "bjw-s.common.render.configMaps.fromFolder" (dict "rootContext" .rootContext "files" .files) -}}
+{{- include "bjw-s.common.render.configMaps.fromFolder" (dict "rootContext" $ "files" .files) -}}
 {{- end -}}
 
 {{/*
 Same as above, but for secretsFromFolder.
 */}}
 {{- define "app-template.secrets-from-folder" -}}
-{{- include "bjw-s.common.render.secrets.fromFolder" (dict "rootContext" .rootContext "files" .files) -}}
+{{- include "bjw-s.common.render.secrets.fromFolder" (dict "rootContext" $ "files" .files) -}}
 {{- end -}}
