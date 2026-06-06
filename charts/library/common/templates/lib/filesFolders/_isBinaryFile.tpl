@@ -1,5 +1,6 @@
 {{- define "bjw-s.common.lib.filesFolders.isBinaryFile" -}}
   {{- $rootContext := .rootContext -}}
+  {{- $files := .files | default $rootContext.Files -}}
   {{- $filePath := .file -}}
   {{- $looksBinary := false -}}
   {{- $binaryExtensions := list
@@ -14,7 +15,7 @@
   {{- end -}}
 
   {{- if not $looksBinary -}}
-    {{- $fileContent := ($rootContext.Files.Get $filePath) -}}
+    {{- $fileContent := ($files.Get $filePath) -}}
 
     {{- $nul := printf "%c" 0 -}}
     {{- $hasNull := contains $fileContent $nul -}}

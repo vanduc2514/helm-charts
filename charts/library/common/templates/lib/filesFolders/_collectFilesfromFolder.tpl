@@ -48,7 +48,7 @@
         {{- if $explicitBinarySet -}}
           {{- $isBinary = $fileOverride.binary -}}
         {{- else -}}
-          {{- $isBinary = eq (include "bjw-s.common.lib.filesFolders.isBinaryFile" (dict "rootContext" $rootContext "file" $file_name)) "true" -}}
+          {{- $isBinary = eq (include "bjw-s.common.lib.filesFolders.isBinaryFile" (dict "rootContext" $rootContext "files" $fileObj "file" $file_name)) "true" -}}
         {{- end -}}
 
         {{- /* Process file based on type */ -}}

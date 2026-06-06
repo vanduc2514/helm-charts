@@ -32,7 +32,7 @@ Renders configMap objects required by the chart from a folder in the repo's path
 
   {{- if $configMapsFromFolderEnabled -}}
     {{- /* Perform validations before rendering */ -}}
-    {{- include "bjw-s.common.lib.configMap.fromFolder.validate" (dict "rootContext" $ "basePath" ($configMapsFromFolder.basePath | default "" )) -}}
+    {{- include "bjw-s.common.lib.configMap.fromFolder.validate" (dict "rootContext" $rootContext "files" $files "basePath" ($configMapsFromFolder.basePath | default "" )) -}}
 
     {{- /* Collect folder contents */ -}}
     {{- $collected := include "bjw-s.common.lib.filesFolders.collectFilesfromFolder" (

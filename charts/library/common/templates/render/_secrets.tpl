@@ -29,7 +29,7 @@ Renders Secret objects required by the chart from a folder in the repo's path.
 
   {{- if $secretsFromFolderEnabled -}}
     {{- /* Perform validations before rendering */ -}}
-    {{- include "bjw-s.common.lib.secret.fromFolder.validate" (dict "rootContext" $ "basePath" ($secretsFromFolder.basePath | default "" )) -}}
+    {{- include "bjw-s.common.lib.secret.fromFolder.validate" (dict "rootContext" $rootContext "files" $files "basePath" ($secretsFromFolder.basePath | default "" )) -}}
 
     {{- /* Collect folder contents */ -}}
     {{- $collected := include "bjw-s.common.lib.filesFolders.collectFilesfromFolder" (
