@@ -7,8 +7,8 @@ parent chart's directory. These templates provide a workaround by accepting
 the parent chart's full context (which includes its .Files) and rendering
 configMaps/secrets using that context.
 
-Usage in parent chart:
-  {{ include "app-template.configmaps-from-folder" . }}
+Usage in parent chart template:
+  {{ include "app-template.configmaps-from-folder" (dict "rootContext" . "files" $.Files) }}
 
 This reads configMapsFromFolder values from the parent chart's top-level
 values and uses the parent chart's .Files to read the folder contents.
@@ -19,12 +19,12 @@ Values should be at top level (NOT inside app-template: section):
     basePath: config/my-app
 */}}
 {{- define "app-template.configmaps-from-folder" -}}
-{{- include "bjw-s.common.render.configMaps.fromFolder" (dict "rootContext" . "files" $.Files) -}}
+{{- include "bjw-s.common.render.configMaps.fromFolder" (dict "rootContext" .rootContext "files" .files) -}}
 {{- end -}}
 
 {{/*
 Same as above, but for secretsFromFolder.
 */}}
 {{- define "app-template.secrets-from-folder" -}}
-{{- include "bjw-s.common.render.secrets.fromFolder" (dict "rootContext" . "files" $.Files) -}}
+{{- include "bjw-s.common.render.secrets.fromFolder" (dict "rootContext" .rootContext "files" .files) -}}
 {{- end -}}
