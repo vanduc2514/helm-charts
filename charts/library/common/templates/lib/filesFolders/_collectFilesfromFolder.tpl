@@ -1,5 +1,6 @@
 {{- define "bjw-s.common.lib.filesFolders.collectFilesfromFolder" -}}
   {{- $rootContext := .rootContext -}}
+  {{- $fileObj := .files | default $rootContext.Files -}}
   {{- $basePath := trimSuffix "/" .basePath -}}
   {{- $fromFolder := .fromFolder | default dict -}}
   {{- $overridesKey := .overridesKey -}}
@@ -9,7 +10,7 @@
 
   {{- /* Step 1: Discover all top-level folders */ -}}
   {{- $folders := dict -}}
-  {{- $filteredPaths := $rootContext.Files.Glob (printf "%s/**" $basePath) -}}
+  {{- $filteredPaths := $fileObj.Glob (printf "%s/**" $basePath) -}}
 
   {{- range $path, $_ := $filteredPaths -}}
     {{- $_ := set $folders (dir $path) "" -}}
@@ -26,7 +27,7 @@
 
     {{- $textData := dict -}}
     {{- $binaryData := dict -}}
-    {{- $allFilesContent := $rootContext.Files.Glob (printf "%s/*" $folder) -}}
+    {{- $allFilesContent := $fileObj.Glob (printf "%s/*" $folder) -}}
 
     {{- /* Extract folder-level overrides */ -}}
     {{- $annotations := dig $overridesKey $sanitizedFolderRelativeToBasePath "annotations" dict $fromFolder -}}
@@ -37,7 +38,7 @@
     {{- range $file_name, $content := $allFilesContent -}}
       {{- $file := base $file_name -}}
       {{- $fileOverride := dig $overridesKey $sanitizedFolderRelativeToBasePath "fileAttributeOverrides" $file nil $fromFolder -}}
-      {{- $fileContent := ($rootContext.Files.Get $file_name) -}}
+      {{- $fileContent := ($fileObj.Get $file_name) -}}
 
       {{- /* Skip excluded files */ -}}
       {{- if not $fileOverride.exclude -}}

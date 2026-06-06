@@ -23,7 +23,8 @@ Renders the configMap objects required by the chart.
 Renders configMap objects required by the chart from a folder in the repo's path.
 */}}
 {{- define "bjw-s.common.render.configMaps.fromFolder" -}}
-  {{- $rootContext := $ -}}
+  {{- $rootContext := .rootContext | default $ -}}
+  {{- $files := .files | default $rootContext.Files -}}
 
   {{- $valuesCopy := $rootContext.Values -}}
   {{- $configMapsFromFolder := $rootContext.Values.configMapsFromFolder | default dict -}}
@@ -37,6 +38,7 @@ Renders configMap objects required by the chart from a folder in the repo's path
     {{- $collected := include "bjw-s.common.lib.filesFolders.collectFilesfromFolder" (
         dict
         "rootContext" $rootContext
+        "files" $files
         "basePath" $configMapsFromFolder.basePath
         "fromFolder" $configMapsFromFolder
         "overridesKey" "configMapsOverrides"
