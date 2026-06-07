@@ -4,7 +4,8 @@ Validate secret from folder values
 {{- define "bjw-s.common.lib.secret.fromFolder.validate" -}}
   {{- $rootContext := .rootContext -}}
   {{- $basePath := required "If you're using `secretsFromFolder` you need to specify a `basePath` key" (trimSuffix "/" .basePath) -}}
-  {{- $filteredPaths := $rootContext.Files.Glob (printf "%s/**" $basePath) -}}
+  {{- $files := .files | default $rootContext.Files -}}
+  {{- $filteredPaths := $files.Glob (printf "%s/**" $basePath) -}}
   {{- $folders := dict -}}
 
   {{- range $path, $_ := $filteredPaths -}}

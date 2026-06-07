@@ -23,41 +23,49 @@ Renders the configMap objects required by the chart.
 Renders configMap objects required by the chart from a folder in the repo's path.
 */}}
 {{- define "bjw-s.common.render.configMaps.fromFolder" -}}
-  {{- $rootContext := $ -}}
+  {{- $rootContext := . -}}
+  {{- $files := $rootContext.Files -}}
 
   {{- $valuesCopy := $rootContext.Values -}}
   {{- $configMapsFromFolder := $rootContext.Values.configMapsFromFolder | default dict -}}
   {{- $configMapsFromFolderEnabled := dig "enabled" false $configMapsFromFolder -}}
 
   {{- if $configMapsFromFolderEnabled -}}
-    {{- /* Perform validations before rendering */ -}}
-    {{- include "bjw-s.common.lib.configMap.fromFolder.validate" (dict "rootContext" $ "basePath" ($configMapsFromFolder.basePath | default "" )) -}}
+    {{- /* Pre-check: only proceed if files exist in the given .Files context.
+          This allows the bridge (parent chart) to pass its own .Files, while
+          the subchart's fromFolder call (which has empty results) skips silently. */ -}}
+    {{- $filesExist := $files.Glob (printf "%s/**" ($configMapsFromFolder.basePath | default "")) -}}
+    {{- if $filesExist -}}
+      {{- /* Perform validations before rendering */ -}}
+      {{- include "bjw-s.common.lib.configMap.fromFolder.validate" (dict "rootContext" $rootContext "basePath" ($configMapsFromFolder.basePath | default "") "files" $files) -}}
 
-    {{- /* Collect folder contents */ -}}
-    {{- $collected := include "bjw-s.common.lib.filesFolders.collectFilesfromFolder" (
-        dict
-        "rootContext" $rootContext
-        "basePath" $configMapsFromFolder.basePath
-        "fromFolder" $configMapsFromFolder
-        "overridesKey" "configMapsOverrides"
-      ) | fromYaml
-    -}}
-
-    {{- /* Iterate collected folders */ -}}
-    {{- range $folder, $entry := $collected -}}
-      {{- $configMapValues := dict
-        "enabled" true
-        "forceRename" $entry.forceRename
-        "labels" $entry.labels
-        "annotations" $entry.annotations
-        "data" $entry.text
-        "binaryData" $entry.binary
+      {{- /* Collect folder contents */ -}}
+      {{- $collected := include "bjw-s.common.lib.filesFolders.collectFilesfromFolder" (
+          dict
+          "rootContext" $rootContext
+          "basePath" $configMapsFromFolder.basePath
+          "fromFolder" $configMapsFromFolder
+          "overridesKey" "configMapsOverrides"
+          "files" $files
+        ) | fromYaml
       -}}
-      {{- $configMapObject := (include "bjw-s.common.lib.valuesToObject" (dict "rootContext" $rootContext "id" $folder "values" $configMapValues) | fromYaml) -}}
 
-      {{- $existingConfigMaps := (get $valuesCopy "configMaps" | default dict) -}}
-      {{- $mergedConfigMaps := deepCopy $existingConfigMaps | merge (dict $folder $configMapObject) -}}
-      {{- $valuesCopy := merge $valuesCopy (dict "configMaps" $mergedConfigMaps) -}}
+      {{- /* Iterate collected folders */ -}}
+      {{- range $folder, $entry := $collected -}}
+        {{- $configMapValues := dict
+          "enabled" true
+          "forceRename" $entry.forceRename
+          "labels" $entry.labels
+          "annotations" $entry.annotations
+          "data" $entry.text
+          "binaryData" $entry.binary
+        -}}
+        {{- $configMapObject := (include "bjw-s.common.lib.valuesToObject" (dict "rootContext" $rootContext "id" $folder "values" $configMapValues) | fromYaml) -}}
+
+        {{- $existingConfigMaps := (get $valuesCopy "configMaps" | default dict) -}}
+        {{- $mergedConfigMaps := deepCopy $existingConfigMaps | merge (dict $folder $configMapObject) -}}
+        {{- $valuesCopy := merge $valuesCopy (dict "configMaps" $mergedConfigMaps) -}}
+      {{- end -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}

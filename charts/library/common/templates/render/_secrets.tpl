@@ -20,44 +20,50 @@ Renders the Secret objects required by the chart.
 Renders Secret objects required by the chart from a folder in the repo's path.
 */}}
 {{- define "bjw-s.common.render.secrets.fromFolder" -}}
-  {{- $rootContext := $ -}}
+  {{- $rootContext := . -}}
+  {{- $files := $rootContext.Files -}}
 
   {{- $valuesCopy := $rootContext.Values -}}
   {{- $secretsFromFolder := $rootContext.Values.secretsFromFolder | default dict -}}
   {{- $secretsFromFolderEnabled := dig "enabled" false $secretsFromFolder -}}
 
   {{- if $secretsFromFolderEnabled -}}
-    {{- /* Perform validations before rendering */ -}}
-    {{- include "bjw-s.common.lib.secret.fromFolder.validate" (dict "rootContext" $ "basePath" ($secretsFromFolder.basePath | default "" )) -}}
+    {{- /* Pre-check: only proceed if files exist in the given .Files context. */ -}}
+    {{- $filesExist := $files.Glob (printf "%s/**" ($secretsFromFolder.basePath | default "")) -}}
+    {{- if $filesExist -}}
+      {{- /* Perform validations before rendering */ -}}
+      {{- include "bjw-s.common.lib.secret.fromFolder.validate" (dict "rootContext" $rootContext "basePath" ($secretsFromFolder.basePath | default "") "files" $files) -}}
 
-    {{- /* Collect folder contents */ -}}
-    {{- $collected := include "bjw-s.common.lib.filesFolders.collectFilesfromFolder" (
-        dict
-        "rootContext" $rootContext
-        "basePath" $secretsFromFolder.basePath
-        "fromFolder" $secretsFromFolder
-        "overridesKey" "overrides"
-      ) | fromYaml
-    -}}
-
-    {{- /* Iterate collected folders */ -}}
-    {{- range $folder, $entry := $collected -}}
-      {{- $secretValues := dict
-        "enabled" true
-        "forceRename" $entry.forceRename
-        "labels" $entry.labels
-        "annotations" $entry.annotations
-        "stringData" $entry.text | default "dict"
+      {{- /* Collect folder contents */ -}}
+      {{- $collected := include "bjw-s.common.lib.filesFolders.collectFilesfromFolder" (
+          dict
+          "rootContext" $rootContext
+          "basePath" $secretsFromFolder.basePath
+          "fromFolder" $secretsFromFolder
+          "overridesKey" "overrides"
+          "files" $files
+        ) | fromYaml
       -}}
 
-      {{- if empty $secretValues.stringData }}
-        {{- $_ := set $secretValues "enabled" false -}}
-      {{- end -}}
-      {{- $secretObject := (include "bjw-s.common.lib.valuesToObject" (dict "rootContext" $rootContext "id" $folder "values" $secretValues) | fromYaml) -}}
+      {{- /* Iterate collected folders */ -}}
+      {{- range $folder, $entry := $collected -}}
+        {{- $secretValues := dict
+          "enabled" true
+          "forceRename" $entry.forceRename
+          "labels" $entry.labels
+          "annotations" $entry.annotations
+          "stringData" $entry.text | default "dict"
+        -}}
 
-      {{- $existingsecrets := (get $valuesCopy "secrets" | default dict) -}}
-      {{- $mergedsecrets := deepCopy $existingsecrets | merge (dict $folder $secretObject) -}}
-      {{- $valuesCopy := merge $valuesCopy (dict "secrets" $mergedsecrets) -}}
+        {{- if empty $secretValues.stringData }}
+          {{- $_ := set $secretValues "enabled" false -}}
+        {{- end -}}
+        {{- $secretObject := (include "bjw-s.common.lib.valuesToObject" (dict "rootContext" $rootContext "id" $folder "values" $secretValues) | fromYaml) -}}
+
+        {{- $existingsecrets := (get $valuesCopy "secrets" | default dict) -}}
+        {{- $mergedsecrets := deepCopy $existingsecrets | merge (dict $folder $secretObject) -}}
+        {{- $valuesCopy := merge $valuesCopy (dict "secrets" $mergedsecrets) -}}
+      {{- end -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}

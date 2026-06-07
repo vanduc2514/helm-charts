@@ -1,8 +1,6 @@
 {{/* Expand the name of the chart */}}
 {{- define "bjw-s.common.lib.chart.names.name" -}}
-  {{- $globalNameOverride := get .Values.global "nameOverride" -}}
-  {{- $nameOverride := get .Values "nameOverride" -}}
-  {{- $name := $globalNameOverride | default $nameOverride | default .Chart.Name -}}
+  {{- $name := (.Values.global).nameOverride | default .Values.nameOverride | default .Chart.Name -}}
   {{- $name | toString | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -13,8 +11,8 @@ If release name contains chart name it will be used as a full name.
 */}}
 {{- define "bjw-s.common.lib.chart.names.fullname" -}}
   {{- $name := include "bjw-s.common.lib.chart.names.name" . -}}
-  {{- $globalFullNameOverride := get .Values.global "fullnameOverride" -}}
-  {{- $fullNameOverride := get .Values "fullnameOverride" -}}
+  {{- $globalFullNameOverride := (.Values.global).fullnameOverride -}}
+  {{- $fullNameOverride := .Values.fullnameOverride -}}
 
   {{- if or $fullNameOverride $globalFullNameOverride -}}
     {{- $name = ($globalFullNameOverride | default $fullNameOverride) -}}

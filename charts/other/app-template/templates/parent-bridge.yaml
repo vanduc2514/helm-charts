@@ -1,0 +1,49 @@
+{{/*
+Bridge template for parent charts to pass their .Files scope to common's fromFolder templates.
+
+Usage in parent chart:
+  {{- include "app-template.from-folder" (dict "rootContext" $ "files" $.Files) }}
+
+This is needed because Helm's .Files in subcharts resolves to the subchart's directory,
+not the parent chart's. The bridge lets parent charts pass their own .Files to the
+common library chart's fromFolder (configMapsFromFolder / secretsFromFolder) feature.
+
+Strategy: Convert $rootContext.Values (a Go typed struct) to a plain map[string]interface{}
+via toJson→fromJson so dig/get work without type erasure. Then set configMapsFromFolder
+on the plain values and pass to common's templates.
+*/}}
+{{- define "app-template.from-folder" -}}
+  {{- $rootContext := .rootContext | default $ -}}
+  {{- $files := .files | default $rootContext.Files -}}
+
+  {{- /* Convert Values to plain map so dig/get work without type erasure */ -}}
+  {{- $plainValues := $rootContext.Values | toJson | fromJson -}}
+
+  {{- /* Read configMapsFromFolder — try top-level configMapsFromFolder first,
+        then app-template dependency path */ -}}
+  {{- $configMapsFromFolder := get $plainValues "configMapsFromFolder" | default (dig "app-template" "configMapsFromFolder" dict $plainValues) -}}
+  {{- if dig "enabled" false $configMapsFromFolder -}}
+    {{- /* Build a context dict with plain values, set configMapsFromFolder on it */ -}}
+    {{- $ctx := dict
+      "Values" $plainValues
+      "Chart" (dict "Name" $rootContext.Chart.Name)
+      "Release" (dict "Name" $rootContext.Release.Name)
+      "Files" $files
+    -}}
+    {{- $_ := set $ctx.Values "configMapsFromFolder" $configMapsFromFolder -}}
+    {{- include "bjw-s.common.render.configMaps.fromFolder" $ctx -}}
+  {{- end -}}
+
+  {{- /* Read secretsFromFolder — same pattern */ -}}
+  {{- $secretsFromFolder := get $plainValues "secretsFromFolder" | default (dig "app-template" "secretsFromFolder" dict $plainValues) -}}
+  {{- if dig "enabled" false $secretsFromFolder -}}
+    {{- $ctx := dict
+      "Values" $plainValues
+      "Chart" (dict "Name" $rootContext.Chart.Name)
+      "Release" (dict "Name" $rootContext.Release.Name)
+      "Files" $files
+    -}}
+    {{- $_ := set $ctx.Values "secretsFromFolder" $secretsFromFolder -}}
+    {{- include "bjw-s.common.render.secrets.fromFolder" $ctx -}}
+  {{- end -}}
+{{- end -}}
